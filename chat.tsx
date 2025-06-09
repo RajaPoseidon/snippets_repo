@@ -8,7 +8,6 @@ const SimpleAssistantModal = () => {
   const [message, setMessage] = useState('');
 
   const handleBackdropClick = (e: React.MouseEvent) => {
-    // Stop if clicking on the modal itself
     if (e.target === e.currentTarget) {
       setIsOpen(false);
     }
@@ -41,22 +40,25 @@ const SimpleAssistantModal = () => {
         />
       </button>
 
-      {/* Modal Container */}
+      {/* Modal Container with transparent backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/20" 
+          className="fixed inset-0" 
           onClick={handleBackdropClick}
         >
+          {/* Semi-transparent backdrop */}
+          <div className="absolute inset-0 bg-black/20" />
+          
           {/* Chat Window */}
           <div 
-            className="fixed bottom-20 right-4 flex h-[500px] w-[400px] flex-col overflow-hidden rounded-xl border bg-background shadow-lg"
+            className="fixed bottom-20 right-4 flex h-[500px] w-[400px] flex-col overflow-hidden rounded-xl border bg-white dark:bg-slate-950 shadow-lg"
           >
             {/* Header */}
             <div className="flex h-14 items-center justify-between border-b px-4">
               <h2 className="font-semibold">Assistant</h2>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="grid place-items-center rounded-full p-2 hover:bg-gray-100"
+                className="grid place-items-center rounded-full p-2 hover:bg-gray-100 dark:hover:bg-slate-800"
               >
                 <XIcon className="size-4" />
               </button>
@@ -68,10 +70,10 @@ const SimpleAssistantModal = () => {
               <div className="text-center">
                 <p className="text-lg font-medium">How can I help you today?</p>
                 <div className="mt-4 space-y-2">
-                  <button className="w-full rounded-lg border p-2 text-sm hover:bg-accent">
+                  <button className="w-full rounded-lg border p-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-800">
                     What is the weather in Tokyo?
                   </button>
-                  <button className="w-full rounded-lg border p-2 text-sm hover:bg-accent">
+                  <button className="w-full rounded-lg border p-2 text-sm hover:bg-gray-50 dark:hover:bg-slate-800">
                     Tell me a joke
                   </button>
                 </div>
@@ -80,13 +82,13 @@ const SimpleAssistantModal = () => {
               {/* Example Messages */}
               <div className="mt-4 space-y-4">
                 <div className="flex justify-end">
-                  <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2">
+                  <div className="max-w-[80%] rounded-lg bg-gray-100 dark:bg-slate-800 px-4 py-2">
                     Hello! How are you?
                   </div>
                 </div>
 
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-lg bg-muted px-4 py-2">
+                  <div className="max-w-[80%] rounded-lg bg-gray-100 dark:bg-slate-800 px-4 py-2">
                     I'm doing great! How can I assist you today?
                   </div>
                 </div>
@@ -94,18 +96,18 @@ const SimpleAssistantModal = () => {
             </div>
 
             {/* Input Area */}
-            <div className="sticky bottom-0 mt-3 w-full pb-4">
+            <div className="sticky bottom-0 mt-3 w-full bg-white dark:bg-slate-950 pb-4">
               <form 
                 onSubmit={handleSubmit}
                 className="mx-4"
               >
-                <div className="focus-within:border-ring/20 flex w-full items-end rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+                <div className="flex w-full items-end rounded-lg border bg-white dark:bg-slate-950 px-2.5 shadow-sm transition-colors ease-in focus-within:border-primary/20">
                   <input
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Write a message..."
-                    className="placeholder:text-muted-foreground max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0"
+                    className="max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   />
                   <button 
                     type="submit"
