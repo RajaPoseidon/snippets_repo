@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import httpx
-import asyncio
+import anyio
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
@@ -104,7 +104,7 @@ async def get_message(conversation_id: str, message_id: str):
         except httpx.HTTPError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
 
-# Polling helper
+# Polling helper using anyio
 async def poll_message_status(conversation_id: str, message_id: str):
     attempts = 0
     while attempts < MAX_POLLING_ATTEMPTS:
@@ -118,7 +118,7 @@ async def poll_message_status(conversation_id: str, message_id: str):
         else:
             wait_time = POLLING_INTERVAL
             
-        await asyncio.sleep(wait_time)
+        await anyio.sleep(wait_time)  # Using anyio.sleep instead of asyncio.sleep
         attempts += 1
     
     raise HTTPException(status_code=408, detail="Polling timeout")
