@@ -1,50 +1,53 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
+import type { EChartsOption, SeriesOption } from 'echarts';
 
-const MultiSeriesChartApp = () => {
-  const [seriesData, setSeriesData] = useState([]);
+interface DataInfo {
+  x: string[];
+  y: {
+    [key: string]: number[];
+  };
+}
 
-  useEffect(() => {
-    async function fetchData() {
-      const response = await new Promise((resolve) =>
-        setTimeout(
-          () =>
-            resolve([
-              {
-                name: 'Revenue',
-                data: [1024519,753843,404312,409040,338590],
-              },
-            ]),
-          500
-        )
-      );
-      //@ts-ignore
-      setSeriesData(response);
+type ScaleType = 'B' | 'M' | 'K' | 'comma';
+
+interface SeriesMeta {
+  name: string;
+  data: number[];
+  max: number;
+  scaleType: ScaleType;
+}
+
+const MultiSeriesChartApp: React.FC = () => {
+  const dataInfo: DataInfo = {
+    x: ['2Q23', '3Q23', '4Q23', '1Q24', '2Q24'],
+    y: {
+      ML: [1024519, 753843, 404312, 409040, 338590]
     }
-    fetchData();
-  }, []);
+  };
 
-  //@ts-ignore
-  const getScaleType = (max) => {
+  const { x: xAxisLabels, y } = dataInfo;
+  const seriesData = Object.entries(y).map(([name, data]) => ({ name, data }));
+
+  const getScaleType = (max: number): ScaleType => {
     if (max >= 1e9) return 'B';
     if (max >= 1e6) return 'M';
+    if (max >= 1e3) return 'K';
     return 'comma';
   };
 
-  //@ts-ignore
-  const formatValue = (val, scaleType) => {
+  const formatValue = (val: number, scaleType: ScaleType): string => {
     if (scaleType === 'B') return (val / 1e9).toFixed(2) + 'B';
     if (scaleType === 'M') return (val / 1e6).toFixed(2) + 'M';
+    if (scaleType === 'K') return (val / 1e3).toFixed(2) + 'K';
     return val.toLocaleString();
   };
 
-  const metaSeries = useMemo(() => {
+  const metaSeries: SeriesMeta[] = useMemo(() => {
     return seriesData.map((s) => {
-      //@ts-ignore
       const max = Math.max(...s.data);
       const scaleType = getScaleType(max);
       return {
-        //@ts-ignore
         ...s,
         max,
         scaleType
@@ -52,31 +55,24 @@ const MultiSeriesChartApp = () => {
     });
   }, [seriesData]);
 
-  const option = useMemo(() => {
-    if (metaSeries.length === 0) return {};
+  const option: EChartsOption = useMemo(() => {
+    if (!seriesData.length) return {};
 
-    const globalMax = Math.max(...metaSeries.map(s => s.max));
+    const globalMax = Math.max(...metaSeries.map((s) => s.max));
     const globalScale = getScaleType(globalMax);
 
     return {
-      title: {
-        text: 'Multi-Series Chart with Smart Tooltips'
-      },
+      title: { text: 'Multi-Series Chart with Smart Tooltips' },
       tooltip: {
         trigger: 'axis',
-        //@ts-ignore
-        formatter: (params) => {
+        formatter: (params: any[]) => {
           return (
             params[0].axisValue +
             '<br/>' +
             params
-              //@ts-ignore
               .map((item) => {
                 const s = metaSeries.find((x) => x.name === item.seriesName);
-                return `${item.marker} ${item.seriesName}: ${formatValue(
-                  item.data,
-                  s.scaleType
-                )}`;
+                return `${item.marker} ${item.seriesName}: ${formatValue(item.data, s?.scaleType || 'comma')}`;
               })
               .join('<br/>')
           );
@@ -88,22 +84,21 @@ const MultiSeriesChartApp = () => {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: ['Mon', 'Tue', 'Wed', 'Thu']
+        data: xAxisLabels
       },
       yAxis: {
         type: 'value',
         axisLabel: {
-        //@ts-ignore
-          formatter: (val) => formatValue(val, globalScale)
+          formatter: (val: number) => formatValue(val, globalScale)
         }
       },
       series: metaSeries.map((s) => ({
         name: s.name,
         type: 'line',
         data: s.data
-      }))
+      })) as SeriesOption[]
     };
-  }, [metaSeries]);
+  }, [metaSeries, xAxisLabels]);
 
   return <ReactECharts option={option} style={{ height: 400 }} />;
 };
