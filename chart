@@ -1,0 +1,70 @@
+//const seriesData = [1024519, 753843, 404312, 409040, 338590, 0, 0];
+const seriesData =[152053, 111843, 59985, 66462, 50234, 100100, 0]
+const maxVal = Math.max(...seriesData);
+
+let scaleType = '';
+if (maxVal >= 1000000000) {
+  scaleType = 'B';
+} else if (maxVal >= 1000000) {
+  scaleType = 'M';
+} else {
+  scaleType = 'full';
+}
+
+function formatValue(val) {
+  if (scaleType === 'B') {
+    return (val / 1000000000).toFixed(2) + 'B';
+  } else if (scaleType === 'M') {
+    return (val / 1000000).toFixed(2) + 'M';
+  } else {
+    return val.toLocaleString(); // comma-separated full number
+  }
+}
+
+option = {
+  title: {
+    text: 'Line Chart (Auto B/M/Comma Based on Max)'
+  },
+  tooltip: {
+    trigger: 'axis',
+    formatter: function (params) {
+      let tooltip = params[0].axisValue + '<br/>';
+      params.forEach(function (item) {
+        tooltip += item.marker + ' ' + item.seriesName + ': ' + formatValue(item.data) + '<br/>';
+      });
+      return tooltip;
+    }
+  },
+  legend: {
+    data: ['Medium']
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
+  toolbox: {
+    feature: {
+      saveAsImage: {}
+    }
+  },
+  xAxis: {
+    type: 'category',
+    boundaryGap: false,
+    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  },
+  yAxis: {
+    type: 'value',
+    axisLabel: {
+      formatter: formatValue
+    }
+  },
+  series: [
+    {
+      name: 'Medium',
+      type: 'line',
+      data: seriesData
+    }
+  ]
+};
