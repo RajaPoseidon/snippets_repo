@@ -1,95 +1,111 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 
-const MultiSeriesChart = () => {
-  const rawSeries = [
-    {
-      name: 'Medium',
-      data: [152053, 111843, 59985, 66462, 50234, 0, 0]
-    },
-    {
-      name: 'Large',
-      data: [100000000000, 400000000000, 900000000, 0, 0, 0, 0]
-    },
-    {
-      name: 'Mid',
-      data: [2000000, 4000000, 8000000, 12000000, 6000000, 1000000, 900000]
-    }
-  ];
+const MultiSeriesChartApp = () => {
+  const [seriesData, setSeriesData] = useState([]);
 
-  // Compute max and assign scaleType
-  const computeScaleType = (max) => {
+  useEffect(() => {
+    async function fetchData() {
+      const response = await new Promise((resolve) =>
+        setTimeout(
+          () =>
+            resolve([
+              {
+                name: 'Revenue',
+                data: [1024519,753843,404312,409040,338590],
+              },
+            ]),
+          500
+        )
+      );
+      //@ts-ignore
+      setSeriesData(response);
+    }
+    fetchData();
+  }, []);
+
+  //@ts-ignore
+  const getScaleType = (max) => {
     if (max >= 1e9) return 'B';
     if (max >= 1e6) return 'M';
     return 'comma';
   };
 
+  //@ts-ignore
   const formatValue = (val, scaleType) => {
     if (scaleType === 'B') return (val / 1e9).toFixed(2) + 'B';
     if (scaleType === 'M') return (val / 1e6).toFixed(2) + 'M';
     return val.toLocaleString();
   };
 
-  const seriesMeta = rawSeries.map(s => {
-    const max = Math.max(...s.data);
-    return {
-      ...s,
-      max,
-      scaleType: computeScaleType(max)
-    };
-  });
+  const metaSeries = useMemo(() => {
+    return seriesData.map((s) => {
+      //@ts-ignore
+      const max = Math.max(...s.data);
+      const scaleType = getScaleType(max);
+      return {
+        //@ts-ignore
+        ...s,
+        max,
+        scaleType
+      };
+    });
+  }, [seriesData]);
 
-  const option = {
-    title: {
-      text: 'Per-Series Y-Axis Formatting'
-    },
-    tooltip: {
-      trigger: 'axis',
-      formatter: (params) => {
-        let tooltip = params[0].axisValue + '<br/>';
-        params.forEach(item => {
-          const meta = seriesMeta.find(s => s.name === item.seriesName);
-          tooltip += `${item.marker} ${item.seriesName}: ${formatValue(item.data, meta.scaleType)}<br/>`;
-        });
-        return tooltip;
-      }
-    },
-    legend: {
-      data: seriesMeta.map(s => s.name)
-    },
-    grid: {
-      left: '5%',
-      right: '15%',
-      bottom: '5%',
-      containLabel: true
-    },
-    toolbox: {
-      feature: {
-        saveAsImage: {}
-      }
-    },
-    xAxis: {
-      type: 'category',
-      data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    },
-    yAxis: seriesMeta.map((s, idx) => ({
-      type: 'value',
-      name: s.name,
-      position: idx === 0 ? 'left' : 'right',
-      offset: idx > 1 ? (idx - 1) * 50 : 0,
-      axisLabel: {
-        formatter: (val) => formatValue(val, s.scaleType)
-      }
-    })),
-    series: seriesMeta.map((s, idx) => ({
-      name: s.name,
-      type: 'line',
-      data: s.data,
-      yAxisIndex: idx
-    }))
-  };
+  const option = useMemo(() => {
+    if (metaSeries.length === 0) return {};
+
+    const globalMax = Math.max(...metaSeries.map(s => s.max));
+    const globalScale = getScaleType(globalMax);
+
+    return {
+      title: {
+        text: 'Multi-Series Chart with Smart Tooltips'
+      },
+      tooltip: {
+        trigger: 'axis',
+        //@ts-ignore
+        formatter: (params) => {
+          return (
+            params[0].axisValue +
+            '<br/>' +
+            params
+              //@ts-ignore
+              .map((item) => {
+                const s = metaSeries.find((x) => x.name === item.seriesName);
+                return `${item.marker} ${item.seriesName}: ${formatValue(
+                  item.data,
+                  s.scaleType
+                )}`;
+              })
+              .join('<br/>')
+          );
+        }
+      },
+      legend: {
+        data: metaSeries.map((s) => s.name)
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: ['Mon', 'Tue', 'Wed', 'Thu']
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+        //@ts-ignore
+          formatter: (val) => formatValue(val, globalScale)
+        }
+      },
+      series: metaSeries.map((s) => ({
+        name: s.name,
+        type: 'line',
+        data: s.data
+      }))
+    };
+  }, [metaSeries]);
 
   return <ReactECharts option={option} style={{ height: 400 }} />;
 };
 
-export default MultiSeriesChart;
+export default MultiSeriesChartApp;
