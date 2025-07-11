@@ -13,3 +13,20 @@ docker run -d --name besu-node \
   --rpc-ws-host=0.0.0.0 \
   --rpc-ws-api=ETH,NET,WEB3,CLIQUE \
   --data-path=/var/lib/besu
+
+
+docker run -d --name besu-node \
+  -p 8545:8545 -p 8546:8546 -p 8547:8547 -p 30303:30303 \
+  hyperledger/besu:25.1.0 \
+  --network=dev \
+  --rpc-http-enabled=true \
+  --rpc-http-host=0.0.0.0 \
+  --rpc-http-cors-origins="all" \
+  --rpc-http-api=ETH,NET,WEB3,CLIQUE \
+  --host-allowlist="*" \
+  --rpc-ws-enabled=true \
+  --rpc-ws-host=0.0.0.0 \
+  --rpc-ws-api=ETH,NET,WEB3,CLIQUE \
+  --graphql-http-enabled=true \
+  --graphql-http-host=0.0.0.0 \
+  --graphql-http-port=8547
