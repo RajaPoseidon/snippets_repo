@@ -30,3 +30,241 @@ docker run -d --name besu-node \
   --graphql-http-enabled=true \
   --graphql-http-host=0.0.0.0 \
   --graphql-http-port=8547
+
+  # Create project directory
+mkdir besu-contract-deployment
+cd besu-contract-deployment
+
+# Initialize npm project
+npm init -y
+
+# Install Hardhat and OpenZeppelin
+npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox
+npm install @openzeppelin/contracts dotenv
+
+# Initialize Hardhat
+npx hardhat init
+# Choose "Create a JavaScript project"
+
+// hardhat.config.js
+require("@nomicfoundation/hardhat-toolbox");
+require('dotenv').config();
+
+module.exports = {
+  solidity: {
+    version: "0.8.19",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
+  networks: {
+    besu: {
+      url: "http://localhost:8545",  // Your RPC node
+      accounts: [
+        "0xc87509a1c067bbde78beb793e6fa76530b6382a4c0241e5e4a9ec0a0f44dc0d3"  // From genesis
+      ],
+      chainId: 1337,
+      gasPrice: 0,  // Zero base fee in your network
+    }
+  }
+};
+
+// contracts/SimpleToken.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract SimpleToken is ERC20, Ownable {
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 initialSupply
+    ) ERC20(name, symbol) Ownable(msg.sender) {
+        _mint(msg.sender, initialSupply * 10**decimals());
+    }
+    
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+    
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
+    }
+}
+
+// scripts/deploy.js
+const hre = require("hardhat");
+
+async function main() {
+  console.log("🚀 Starting deployment to Besu network...");
+  
+  // Get deployer account
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("📝 Deploying with account:", deployer.address);
+  
+  // Check balance
+  const balance = await hre.ethers.provider.getBalance(deployer.address);
+  console.log("�� Account balance:", hre.ethers.formatEther(balance), "ETH");
+  
+  // Deploy SimpleToken
+  console.log("📦 Deploying SimpleToken...");
+  const SimpleToken = await hre.ethers.getContractFactory("SimpleToken");
+  const simpleToken = await SimpleToken.deploy(
+    "My Besu Token",    // name
+    "MBT",              // symbol
+    1000000             // initial supply (1 million tokens)
+  );
+  
+  await simpleToken.waitForDeployment();
+  const tokenAddress = await simpleToken.getAddress();
+  
+  console.log("✅ SimpleToken deployed to:", tokenAddress);
+  
+  // Get contract details
+  const name = await simpleToken.name();
+  const symbol = await simpleToken.symbol();
+  const totalSupply = await simpleToken.totalSupply();
+  const owner = await simpleToken.owner();
+  
+  console.log("\n📋 Contract Details:");
+  console.log("   Name:", name);
+  console.log("   Symbol:", symbol);
+  console.log("   Total Supply:", hre.ethers.formatEther(totalSupply), "MBT");
+  console.log("   Owner:", owner);
+  
+  // Save deployment info
+  console.log("\n�� Deployment Summary:");
+  console.log("   Network:", hre.network.name);
+  console.log("   Contract Address:", tokenAddress);
+  console.log("   Deployer:", deployer.address);
+  console.log("   Chain ID:", await hre.ethers.provider.getNetwork().then(n => n.chainId));
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("❌ Deployment failed:", error);
+    process.exit(1);
+  });
+
+
+// scripts/interact.js
+const hre = require("hardhat");
+
+async function main() {
+  const contractAddress = "0x..."; // Replace with your deployed contract address
+  
+  console.log("🔍 Interacting with SimpleToken...");
+  
+  const SimpleToken = await hre.ethers.getContractFactory("SimpleToken");
+  const simpleToken = SimpleToken.attach(contractAddress);
+  
+  // Get contract info
+  const name = await simpleToken.name();
+  const symbol = await simpleToken.symbol();
+  const totalSupply = await simpleToken.totalSupply();
+  
+  console.log("�� Contract Info:");
+  console.log("   Name:", name);
+  console.log("   Symbol:", symbol);
+  console.log("   Total Supply:", hre.ethers.formatEther(totalSupply), "MBT");
+  
+  // Get deployer info
+  const [deployer] = await hre.ethers.getSigners();
+  const deployerBalance = await simpleToken.balanceOf(deployer.address);
+  console.log("   Deployer Balance:", hre.ethers.formatEther(deployerBalance), "MBT");
+  
+  // Mint tokens to another account
+  const recipient = "0x627306090abaB3A6e1400e9345bC60c78a8BEf57";
+  const mintAmount = hre.ethers.parseEther("5000"); // 5000 tokens
+  
+  console.log("\n🪙 Minting tokens...");
+  const mintTx = await simpleToken.mint(recipient, mintAmount);
+  await mintTx.wait();
+  
+  console.log("✅ 5000 tokens minted to:", recipient);
+  
+  // Check recipient balance
+  const recipientBalance = await simpleToken.balanceOf(recipient);
+  console.log("💰 Recipient balance:", hre.ethers.formatEther(recipientBalance), "MBT");
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("❌ Interaction failed:", error);
+    process.exit(1);
+  });
+
+//package.json
+{
+  "name": "besu-contract-deployment",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network besu",
+    "interact": "hardhat run scripts/interact.js --network besu",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "hardhat": "^2.17.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.0.0"
+  }
+}
+
+# Make sure your Besu network is running
+docker-compose ps
+
+# If not running, start it
+./run.sh
+
+# Wait for network to be ready
+sleep 30
+
+# Compile contracts
+npx hardhat compile
+
+# Deploy to Besu network
+npx hardhat run scripts/deploy.js --network besu
+
+
+🚀 Starting deployment to Besu network...
+📝 Deploying with account: 0x627306090abaB3A6e1400e9345bC60c78a8BEf57
+💰 Account balance: 20000.0 ETH
+📦 Deploying SimpleToken...
+✅ SimpleToken deployed to: 0x1234567890abcdef...
+
+�� Contract Details:
+   Name: My Besu Token
+   Symbol: MBT
+   Total Supply: 1000000.0 MBT
+   Owner: 0x627306090abaB3A6e1400e9345bC60c78a8BEf57
+
+�� Deployment Summary:
+   Network: besu
+   Contract Address: 0x1234567890abcdef...
+   Deployer: 0x627306090abaB3A6e1400e9345bC60c78a8BEf57
+   Chain ID: 1337
+
+# Update the contract address in scripts/interact.js
+# Then run:
+npx hardhat run scripts/interact.js --network besu
+
+besu-contract-deployment/
+├── contracts/
+│   └── SimpleToken.sol
+├── scripts/
+│   ├── deploy.js
+│   └── interact.js
+├── hardhat.config.js
+├── package.json
+└── .env (optional)
