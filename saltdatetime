@@ -1,17 +1,28 @@
-import { format, endOfQuarter, subQuarters } from "date-fns";
+import { endOfQuarter, subQuarters, format, parseISO } from "date-fns";
 
 const FMT = "yyyy-MM-dd";
 
+/** Latest *closed* quarter CoB as of "now" (UTC). */
 export const latestClosedQuarterISO = (): string => {
-  const now = new Date();             // JS Date with local TZ, but we'll only read Y/M/D
-  const endThisQ = endOfQuarter(now);
-  if (now < endThisQ) {
-    return format(endOfQuarter(subQuarters(now, 1)), FMT);
+  // "today" at UTC midnight
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+  const qEndThisQ = endOfQuarter(todayUTC);
+
+  if (todayUTC < qEndThisQ) {
+    // not yet quarter end → take previous quarter
+    return format(endOfQuarter(subQuarters(todayUTC, 1)), FMT);
   }
-  return format(endThisQ, FMT);
+  // if today is quarter end, it's closed
+  return format(qEndThisQ, FMT);
 };
 
+/** Given a quarter CoB (YYYY-MM-DD), return the previous quarter's CoB (YYYY-MM-DD). */
 export const previousQuarterFromISO = (iso: string): string => {
-  const d = new Date(iso + "T00:00:00Z"); // force UTC midnight
-  return format(endOfQuarter(subQuarters(d, 1)), FMT);
+  // parseISO gives local midnight → force UTC midnight to be safe
+  const d = parseISO(iso);
+  const dUTC = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+
+  return format(endOfQuarter(subQuarters(dUTC, 1)), FMT);
 };
