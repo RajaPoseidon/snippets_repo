@@ -1,92 +1,52 @@
-import * as React from "react";
-import {
-  LocalizationProvider,
-  DatePicker,
-  DatePickerSingleInput,
-  DatePickerSingleGridPanel,
-} from "@salt-ds/lab";
-import { AdapterMoment } from "@salt-ds/date-adapters";
-import moment from "moment-timezone";
+// quarterCoB.ts
+// All functions return or accept YYYY-MM-DD (date-only, TZ-agnostic)
 
-const DISPLAY_FMT = "DD MMM YYYY"; // matches your screenshot
-const ISO_FMT = "YYYY-MM-DD";
+const toISO = (y: number, m1: number, d: number) =>
+  `${y}-${String(m1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-// --- helpers (UTC, no TZ drift) ---
-const toUTC = (iso: string | moment.Moment) =>
-  typeof iso === "string" ? moment.tz(iso, ISO_FMT, "UTC") : iso.tz("UTC");
-
-const latestClosedQuarterISO = () => {
-  const today = moment.tz("UTC").startOf("day");
-  const qEnd = today.clone().endOf("quarter").startOf("day");
-  return today.isBefore(qEnd, "day")
-    ? today.clone().subtract(1, "quarter").endOf("quarter").format(ISO_FMT)
-    : qEnd.format(ISO_FMT);
+export const dateFromISO_UTC = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
 };
 
-const previousQuarterFromISO = (iso: string) =>
-  toUTC(iso).clone().subtract(1, "quarter").endOf("quarter").format(ISO_FMT);
+export const isoFromDate_UTC = (d: Date) =>
+  toISO(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
 
-// --- component ---
-export default function QuarterCobPickers({
-  onChangeLatest,      // (iso: string) => void
-  onChangePrevious,    // (iso: string) => void
-  linkPreviousToLatest = false, // if true, second auto-tracks one quarter before first
-}: {
-  onChangeLatest?: (iso: string) => void;
-  onChangePrevious?: (iso: string) => void;
-  linkPreviousToLatest?: boolean;
-}) {
-  const latestISO = React.useMemo(() => latestClosedQuarterISO(), []);
-  const prevISO = React.useMemo(() => previousQuarterFromISO(latestISO), [latestISO]);
+const endOfMonthDay_UTC = (year: number, month0: number) =>
+  new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
 
-  const [qLatestISO, setQLatestISO] = React.useState(latestISO);
-  const [qPrevISO, setQPrevISO] = React.useState(prevISO);
+const endOfQuarterISO_UTC = (dateLike: Date | string) => {
+  const d = typeof dateLike === "string" ? dateFromISO_UTC(dateLike) : dateLike;
+  const y = d.getUTCFullYear();
+  const m0 = d.getUTCMonth();
+  const qEndMonth0 = Math.floor(m0 / 3) * 3 + 2; // 2,5,8,11
+  const day = endOfMonthDay_UTC(y, qEndMonth0);
+  return toISO(y, qEndMonth0 + 1, day);
+};
 
-  const qLatestMoment = toUTC(qLatestISO);
-  const qPrevMoment = toUTC(qPrevISO);
+/** Latest *closed* quarter CoB as of "now" (UTC). */
+export const latestClosedQuarterISO_UTC = (): string => {
+  const now = new Date();
+  const todayISO = isoFromDate_UTC(now);
+  const qEndTodayISO = endOfQuarterISO_UTC(todayISO);
+  const today = dateFromISO_UTC(todayISO);
+  const qEndToday = dateFromISO_UTC(qEndTodayISO);
 
-  return (
-    <LocalizationProvider dateAdapter={AdapterMoment}>
-      <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-        <label style={{ color: "var(--salt-text-primary)" }}>
-          <span style={{ marginRight: 8, fontWeight: 600 }}>Current CoB:</span>
-          <DatePicker
-            selectionVariant="single"
-            timezone="UTC"
-            selectedDate={qLatestMoment}
-            onSelectionChange={(m) => {
-              const iso = m.tz("UTC").format(ISO_FMT); // <-- always YYYY-MM-DD
-              setQLatestISO(iso);
-              onChangeLatest?.(iso);
-              if (linkPreviousToLatest) {
-                const prev = previousQuarterFromISO(iso);
-                setQPrevISO(prev);
-                onChangePrevious?.(prev);
-              }
-            }}
-          >
-            <DatePickerSingleInput format={DISPLAY_FMT} />
-            <DatePickerSingleGridPanel />
-          </DatePicker>
-        </label>
+  // If today is before the quarter's end, last closed = previous quarter's end
+  if (today.getTime() < qEndToday.getTime()) {
+    const prevQStart = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 3, 1)
+    );
+    return endOfQuarterISO_UTC(prevQStart);
+  }
+  return qEndTodayISO; // today is the quarter-end day
+};
 
-        <label style={{ color: "var(--salt-text-primary)" }}>
-          <span style={{ marginRight: 8, fontWeight: 600 }}>Previous CoB:</span>
-          <DatePicker
-            selectionVariant="single"
-            timezone="UTC"
-            selectedDate={qPrevMoment}
-            onSelectionChange={(m) => {
-              const iso = m.tz("UTC").format(ISO_FMT);
-              setQPrevISO(iso);
-              onChangePrevious?.(iso);
-            }}
-          >
-            <DatePickerSingleInput format={DISPLAY_FMT} />
-            <DatePickerSingleGridPanel />
-          </DatePicker>
-        </label>
-      </div>
-    </LocalizationProvider>
+/** Given a quarter CoB (YYYY-MM-DD), return the previous quarter's CoB (YYYY-MM-DD). */
+export const previousQuarterFromISO_UTC = (iso: string): string => {
+  const d = dateFromISO_UTC(iso);
+  const prevQStart = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, 1)
   );
-}
+  return endOfQuarterISO_UTC(prevQStart);
+};
