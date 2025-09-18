@@ -1,52 +1,17 @@
-// quarterCoB.ts
-// All functions return or accept YYYY-MM-DD (date-only, TZ-agnostic)
+import { format, endOfQuarter, subQuarters } from "date-fns";
 
-const toISO = (y: number, m1: number, d: number) =>
-  `${y}-${String(m1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+const FMT = "yyyy-MM-dd";
 
-export const dateFromISO_UTC = (iso: string) => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
-};
-
-export const isoFromDate_UTC = (d: Date) =>
-  toISO(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
-
-const endOfMonthDay_UTC = (year: number, month0: number) =>
-  new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
-
-const endOfQuarterISO_UTC = (dateLike: Date | string) => {
-  const d = typeof dateLike === "string" ? dateFromISO_UTC(dateLike) : dateLike;
-  const y = d.getUTCFullYear();
-  const m0 = d.getUTCMonth();
-  const qEndMonth0 = Math.floor(m0 / 3) * 3 + 2; // 2,5,8,11
-  const day = endOfMonthDay_UTC(y, qEndMonth0);
-  return toISO(y, qEndMonth0 + 1, day);
-};
-
-/** Latest *closed* quarter CoB as of "now" (UTC). */
-export const latestClosedQuarterISO_UTC = (): string => {
-  const now = new Date();
-  const todayISO = isoFromDate_UTC(now);
-  const qEndTodayISO = endOfQuarterISO_UTC(todayISO);
-  const today = dateFromISO_UTC(todayISO);
-  const qEndToday = dateFromISO_UTC(qEndTodayISO);
-
-  // If today is before the quarter's end, last closed = previous quarter's end
-  if (today.getTime() < qEndToday.getTime()) {
-    const prevQStart = new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 3, 1)
-    );
-    return endOfQuarterISO_UTC(prevQStart);
+export const latestClosedQuarterISO = (): string => {
+  const now = new Date();             // JS Date with local TZ, but we'll only read Y/M/D
+  const endThisQ = endOfQuarter(now);
+  if (now < endThisQ) {
+    return format(endOfQuarter(subQuarters(now, 1)), FMT);
   }
-  return qEndTodayISO; // today is the quarter-end day
+  return format(endThisQ, FMT);
 };
 
-/** Given a quarter CoB (YYYY-MM-DD), return the previous quarter's CoB (YYYY-MM-DD). */
-export const previousQuarterFromISO_UTC = (iso: string): string => {
-  const d = dateFromISO_UTC(iso);
-  const prevQStart = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 3, 1)
-  );
-  return endOfQuarterISO_UTC(prevQStart);
+export const previousQuarterFromISO = (iso: string): string => {
+  const d = new Date(iso + "T00:00:00Z"); // force UTC midnight
+  return format(endOfQuarter(subQuarters(d, 1)), FMT);
 };
