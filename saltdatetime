@@ -1,18 +1,26 @@
-import moment from "moment-timezone";
+// utils/dateConversion.ts
 
-const FMT = "YYYY-MM-DD";
+// ISO = "YYYY-MM-DD"
+export type ISODate = string;
 
-/** Latest closed month end as of now (UTC-safe). */
-export const latestClosedMonthEndISO = (): string => {
-  const today = moment.utc();
-  const endThisMonth = today.clone().endOf("month");
-  if (today.isBefore(endThisMonth, "day")) {
-    return today.clone().subtract(1, "month").endOf("month").format(FMT);
-  }
-  return endThisMonth.format(FMT);
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const toISO = (y: number, m1: number, d: number): ISODate =>
+  `${y}-${pad2(m1)}-${pad2(d)}`;
+
+/**
+ * Turn an ISO date string into a JS Date at *local* midnight.
+ * This ensures Salt DS DatePicker (date-fns adapter) shows the correct calendar day
+ * in any timezone.
+ */
+export const dateForPickerFromISO = (iso: ISODate): Date => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d); // local midnight
 };
 
-/** Given any month-end (ISO), return the previous quarter's close. */
-export const previousQuarterEndFromISO = (iso: string): string => {
-  return moment.utc(iso, FMT).subtract(1, "quarter").endOf("quarter").format(FMT);
+/**
+ * Turn a JS Date from the DatePicker back into an ISO string (YYYY-MM-DD).
+ * Reads local parts so the day matches what the user saw/selected.
+ */
+export const isoFromPickerDate = (date: Date): ISODate => {
+  return toISO(date.getFullYear(), date.getMonth() + 1, date.getDate());
 };
