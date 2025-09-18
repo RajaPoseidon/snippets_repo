@@ -1,40 +1,18 @@
-import { endOfMonth, endOfQuarter, subMonths, subQuarters, format, parseISO } from "date-fns";
+import moment from "moment-timezone";
 
-const FMT = "yyyy-MM-dd";
+const FMT = "YYYY-MM-DD";
 
-// --- UTC helpers (no timezone drift) ---
-const toUTC = (d: Date) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-const fromISO_UTC = (iso: string) => {
-  const d = parseISO(iso); // local midnight
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); // force UTC midnight
-};
-const toISO = (d: Date) => format(d, FMT);
-
-// --- Public API ---
-
-/**
- * Latest *closed* month end as of "now" (UTC).
- * If today is before the end of this month, returns last month's end (CoB).
- * If today *is* the month end, returns today's month end.
- */
+/** Latest closed month end as of now (UTC-safe). */
 export const latestClosedMonthEndISO = (): string => {
-  const now = new Date();
-  const todayUTC = toUTC(now);
-  const thisMonthEndUTC = endOfMonth(todayUTC);
-  if (todayUTC < thisMonthEndUTC) {
-    // month not closed yet → previous month's end
-    return toISO(endOfMonth(subMonths(todayUTC, 1)));
+  const today = moment.utc();
+  const endThisMonth = today.clone().endOf("month");
+  if (today.isBefore(endThisMonth, "day")) {
+    return today.clone().subtract(1, "month").endOf("month").format(FMT);
   }
-  // today is month end → closed today
-  return toISO(thisMonthEndUTC);
+  return endThisMonth.format(FMT);
 };
 
-/**
- * Given ANY ISO date (YYYY-MM-DD) — month-end or not —
- * return the **previous quarter's** CoB (YYYY-MM-DD).
- * e.g. "2025-06-30" → "2025-03-31", "2025-05-31" → "2025-03-31"
- */
+/** Given any month-end (ISO), return the previous quarter's close. */
 export const previousQuarterEndFromISO = (iso: string): string => {
-  const dUTC = fromISO_UTC(iso);
-  return toISO(endOfQuarter(subQuarters(dUTC, 1)));
+  return moment.utc(iso, FMT).subtract(1, "quarter").endOf("quarter").format(FMT);
 };
