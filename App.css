@@ -1,0 +1,19 @@
+.app-container {
+  height: 100vh;
+  width: 100%;
+  background: var(--salt-container-primary-background);
+}
+
+.left-panel {
+  width: 30%;
+  min-width: 320px;
+  max-width: 400px;
+  background: var(--salt-container-secondary-background);
+  border-right: 1px solid var(--salt-separable-borderColor);
+  overflow-y: auto;
+}
+
+.right-panel {
+  background: var(--salt-container-primary-background);
+  overflow-y: auto;
+}

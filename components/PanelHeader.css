@@ -1,0 +1,25 @@
+.panel-card {
+  --saltCard-padding: 0;
+  background: var(--salt-container-primary-background);
+  border: 2px solid var(--salt-separable-borderColor);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Header section */
+.panel-header {
+  padding: var(--salt-spacing-100) var(--salt-spacing-150);
+  background: var(--salt-container-secondary-background);
+  border-bottom: 1px solid var(--salt-separable-borderColor);
+}
+
+.panel-header h3 {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Content section */
+.panel-content {
+  padding: var(--salt-spacing-200);
+  min-height: 100px;
+}

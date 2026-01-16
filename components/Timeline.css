@@ -1,0 +1,93 @@
+.timeline-container {
+  padding: var(--salt-spacing-200);
+  height: 100%;
+}
+
+.timeline-header {
+  padding-bottom: var(--salt-spacing-150);
+  border-bottom: 1px solid var(--salt-separable-borderColor);
+  margin-bottom: var(--salt-spacing-200);
+}
+
+.timeline-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--salt-spacing-50) 0;
+  gap: 0;
+}
+
+.timeline-step-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.timeline-connector {
+  width: 2px;
+  height: 16px;
+  background: var(--salt-separable-borderColor);
+  opacity: 0.5;
+}
+
+.timeline-card {
+  width: 100%;
+  background: var(--salt-container-secondary-background);
+  border: 1px solid var(--salt-separable-borderColor);
+  border-left: 3px solid #3b82f6;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timeline-card:hover {
+  background: var(--salt-container-tertiary-background);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.timeline-card--completed {
+  opacity: 1;
+}
+
+.timeline-card--active {
+  background: var(--salt-container-tertiary-background);
+  border: 2px solid var(--salt-accent-borderColor);
+}
+
+.timeline-card--pending {
+  opacity: 0.5;
+}
+
+.timeline-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--salt-palette-corner-weak);
+  background: transparent;
+  border: 1.5px solid var(--salt-content-secondary-foreground);
+  color: var(--salt-content-secondary-foreground);
+}
+
+.timeline-card--active .timeline-icon {
+  border-color: var(--salt-accent-borderColor);
+  color: var(--salt-accent-foreground);
+}
+
+.timeline-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  opacity: 0.4;
+  color: var(--salt-separable-borderColor);
+}
+
+.timeline-footer {
+  margin-top: auto;
+  padding-top: var(--salt-spacing-200);
+  border-top: 1px solid var(--salt-separable-borderColor);
+}
